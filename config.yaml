@@ -1,0 +1,6 @@
+
+dbTyp: SQLight
+dbFile: pyDMS.sql
+managedDir: /home/bheublein/Dokumente/klaut/DMS/
+newFiles: new/
+outputDir: output/
