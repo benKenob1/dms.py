@@ -7,7 +7,7 @@ import os
 from shutil import copyfile
 '''
 #########################################################
-#config part for things that can only be confirated here
+#config part
 #########################################################
 '''
 config = {
@@ -20,9 +20,9 @@ config = {
 
 class newFile(object):
     '''
-    Instances of this class are looking for new File
-    makes a list of the files with all tags
-    cleans the newsDir
+    Instances of this class are look for new File
+    make a list of the files with all tags
+    clean the newsDir
     '''
 
     def __init__(self, newsDir):
@@ -284,7 +284,7 @@ def cleanup():
 
 
 def refresh():
-    # searching for new file in the new-directory and asimlation it into the db
+    # searching for new file in the new-directory write metadata into the db
     # a copy it into the directory-structur
     newFiles = newFile(config['newFilesDir'])
 
