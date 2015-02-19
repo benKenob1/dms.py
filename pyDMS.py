@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import dirman
 import sqlite3
 import datetime
 import os
@@ -12,8 +11,8 @@ from shutil import copyfile
 #########################################################
 '''
 config = {
-    'managedDir': '/home/bheublein/Dokumente/klaut/DMS/',
-    'newFilesDir': '/home/bheublein/Dokumente/klaut/DMS/new/',
+    'managedDir': '/home/bheublein/Documents/klaut/DMS/',
+    'newFilesDir': '/home/bheublein/Documents/klaut/DMS/new/',
     'dbTyp': 'SQLight',
     'dbFile': 'pyDMS.sql'
 }
@@ -84,8 +83,8 @@ class placeFile(object):
 
     def __init__(self, filedata, config):
         # create dir if not existing
-        self.dirName = config.managedDir+str(filedata["date"])+"/"
-        self.src = config.news+filedata["filename"]
+        self.dirName = config['managedDir']+str(filedata["date"])+"/"
+        self.src = config['newFilesDir']+filedata["filename"]
         self.dest = self.dirName+filedata["filename"]
         self.mkDir()
         self.cpFile()
@@ -106,7 +105,7 @@ class placeFile(object):
 
 # DB Struktur
 files_structur = '''
-DROP TABLE IF EXISTS files
+DROP TABLE IF EXISTS files;
 CREATE TABLE files(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     place TEXT NOT NULL,
@@ -115,14 +114,14 @@ CREATE TABLE files(
     );'''
 
 tags_structur = '''
-DROP TABLE IF EXISTS tags
+DROP TABLE IF EXISTS tags;
 CREATE TABLE tags(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL
     );'''
 
 tag_relation_structur = '''
-DROP TABLE IF EXISTS tag_relation
+DROP TABLE IF EXISTS tag_relation;
 CREATE TABLE tag_relation(
     files_id INTEGER,
     tags_id INTEGER,
@@ -287,7 +286,7 @@ def cleanup():
 def refresh():
     # searching for new file in the new-directory and asimlation it into the db
     # a copy it into the directory-structur
-    newFiles = dirman.newFile(config['newFilesDir'])
+    newFiles = newFile(config['newFilesDir'])
 
     for files in newFiles.getList():
         print("Filename : {0}".format(files["filename"]))
@@ -299,7 +298,7 @@ def refresh():
         print("{0}".format(string))
         answer = input("Should I import?(y/n) ")
         if answer in "yY":
-            dirman.placeFile(files, config)
+            placeFile(files, config)
             db = MyDB(config['dbFile'])
             db.addItem(files["place"], files["date"], files["type"],
                        files["tags"])
