@@ -11,8 +11,8 @@ from shutil import copyfile
 #########################################################
 '''
 config = {
-    'managedDir': '/home/bheublein/Documents/klaut/DMS/',
-    'newFilesDir': '/home/bheublein/Documents/klaut/DMS/new/',
+    'managedDir': '/home/benni/Dokumente/DMS/',
+    'newFilesDir': '/home/benni/Dokumente/DMS/new/',
     'dbTyp': 'SQLight',
     'dbFile': 'pyDMS.sql'
 }
@@ -191,27 +191,47 @@ class MyDB(object):
         self.connection.commit()
 
     def getTagId(self, name):
-        self.cursor.execute("SELECT id FROM tags WHERE name=(?);", (name,))
+        self.cursor.execute("SELECT id FROM tags "
+                            + "WHERE name LIKE (?);", ("%"+name+"%",))
         tagId = self.cursor.fetchone()
         if tagId:
             return tagId[0]
         else:
             return None
 
-    def getFilelist(self):
-        self.cursor.execute("SELECT files_id,place FROM files;")
+    def getTagList(self):
+        self.cursor.execute("SELECT name FROM tags ORDER BY name;")
+        tag = self.cursor.fetchone()
+        while tag:
+            yield tag[0]
+            tag = self.cursor.fetchone()
 
-    def getFilelistByTag(self, tag):
-        tagId = self.getTagId(tag)
-        if tagId:
-            self.cursor.execute("SELECT files.place "
-                                + "FROM files "
-                                + "JOIN  tag_relation "
-                                + "ON files.id = tag_relation.files_id "
-                                + "JOIN tags "
-                                + "ON tags.id = tag_relation.tags_id "
-                                + "WHERE tags.name LIKE ?"
-                                + "ORDER BY files.place;", ("%"+tag+"%",))
+    def getFilelist(self):
+        self.cursor.execute("SELECT place FROM files Order BY place;")
+        entry = self.cursor.fetchone()
+        while entry:
+            yield entry[0]
+            entry = self.cursor.fetchone()
+
+    def getFilelistByTag(self, tags):
+        tag_ids = []
+        for tag in tags:
+            tag_id = self.getTagId(tag)
+            if tag_id:
+                tag_ids.append(tag_id)
+        if tag_ids:
+            query = ("SELECT files.place "
+                     + "FROM files "
+                     + "WHERE id IN (")
+
+            for tag_id in enumerate(tag_ids):
+                if tag_id[0] > 0:
+                    query += "INTERSECT "
+                query += ("SELECT files_id FROM tag_relation "
+                          + "WHERE tags_id=(?) ")
+
+            query += ") ORDER BY files.place;"
+            self.cursor.execute(query, (tag_ids))
             file = self.cursor.fetchone()
             while file:
                 yield file[0]
@@ -227,44 +247,53 @@ def main():
     parser.add_argument("-r", "--refresh", action="store_true",
                         help="searches for new Files in the DMS-Directory",
                         default=False)
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        default=False)
     parser.add_argument("-s", "--search", action="store",
-                        help="search for Files with your tags")
+                        help="tag or a list of tags to search for",
+                        nargs='+')
+    parser.add_argument('-t', "--tags", action="store_true",
+                        help="get a list of available tags")
+    parser.add_argument('-f', "--files", action="store_true",
+                        help="get a list of available files")
     parser.add_argument("--flushdb", action="store_true",
                         help="hope you know what you are doing", default=False)
-    parser.add_argument('--version', action='version', version='0.1a')
+    parser.add_argument('--version', action='version', version='0.2a')
     arguments = parser.parse_args()
 
     # Load the config
     if arguments.refresh:
-        refresh()
+        refresh(arguments.verbose)
 
     elif arguments.flushdb:
         db = MyDB(config['dbFile'])
         db.buildStructure()
 
+    elif arguments.files:
+        list_files()
+
     elif arguments.cleanup:
         cleanup()
 
     elif arguments.search:
-        search(arguments.search)
-    # elif options.bind:
-    #    bind(config,options.bind)
+        search(arguments.search, arguments.verbose)
 
-    # else:
-    #    parser.print_help()
+    elif arguments.tags:
+        list_tags()
+
+    else:
+        parser.print_help()
 
     # verbose=options.verbose
     return(0)
 
-'''
-def bind(config, tag):
-    #get file l ist by tag
-    db=MyDB(config.dbFile)
-    filelist=db.getFilelistByTag(tag)
 
-    #write output
-    pdf.bind(filelist,config.outputDir+tag+".pdf",config)
-'''
+def list_files():
+    # get a list of available files
+    db = MyDB(config["dbFile"])
+    filelist = db.getFilelist()
+    for file in filelist:
+        print(config['managedDir']+file)
 
 
 def cleanup():
@@ -272,8 +301,7 @@ def cleanup():
     cleaning up the db from dead file links
     getting file list
     check if file don't exist
-
-    delete file
+        delete file
     check if tags of deleted file are now dead tags
     cleaning up the db from dead tags
 
@@ -283,34 +311,47 @@ def cleanup():
     pass
 
 
-def refresh():
+def refresh(verbose):
     # searching for new file in the new-directory write metadata into the db
     # a copy it into the directory-structur
     newFiles = newFile(config['newFilesDir'])
 
     for files in newFiles.getList():
-        print("Filename : {0}".format(files["filename"]))
-        print("Date : {0}".format(files["date"]))
-        print("Filetype : {0}".format(files["type"]))
-        string = "Tags : "
-        for tag in files["tags"]:
-            string += "{0} ".format(tag)
-        print("{0}".format(string))
-        answer = input("Should I import?(y/n) ")
+        if verbose:
+            print("Filename : {0}".format(files["filename"]))
+            print("Date : {0}".format(files["date"]))
+            print("Filetype : {0}".format(files["type"]))
+            string = "Tags : "
+            for tag in files["tags"]:
+                string += "{0} ".format(tag)
+            print("{0}".format(string))
+            answer = input("Should I import?(y/n) ")
+        else:
+            answer = 'y'
         if answer in "yY":
             placeFile(files, config)
             db = MyDB(config['dbFile'])
             db.addItem(files["place"], files["date"], files["type"],
                        files["tags"])
-            print("File added!\n")
+            print("{0} added!\n".format(files["filename"]))
 
 
-def search(searchstring):
-    print(searchstring)
+def search(searchstring, verbose):
+    if verbose:
+        print('Searchtags: ' + ' '.join(searchstring))
     db = MyDB(config['dbFile'])
     filelist = db.getFilelistByTag(searchstring)
+    # print("\n".join(filelist))
     for file in filelist:
-        print(file)
+        print(config['managedDir']+file)
+
+
+def list_tags():
+    db = MyDB(config['dbFile'])
+    tagList = db.getTagList()
+    print("\n".join(tagList))
+    for tag in tagList:
+        print(tag)
 
 if __name__ == '__main__':
     main()
