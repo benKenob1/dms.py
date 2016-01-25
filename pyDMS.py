@@ -120,9 +120,9 @@ CREATE TABLE tags(
     name TEXT NOT NULL
     );'''
 
-tag_relation_structur = '''
+tag_file_structur = '''
 DROP TABLE IF EXISTS tag_relation;
-CREATE TABLE tag_relation(
+CREATE TABLE tag_file(
     files_id INTEGER,
     tags_id INTEGER,
     FOREIGN KEY(files_id) REFERENCES files(id) ON DELETE CASCADE,
@@ -167,7 +167,7 @@ class MyDB(object):
             self.addRelation(fileId, tagId)
 
     def addRelation(self, fileid, tagid):
-        query = "INSERT INTO tag_relation(files_id,tags_id) VALUES(?,?);"
+        query = "INSERT INTO tag_file(files_id,tags_id) VALUES(?,?);"
         self.cursor.execute(query, (fileid, tagid))
         self.connection.commit()
 
@@ -186,32 +186,61 @@ class MyDB(object):
     def buildStructure(self):
         self.cursor.executescript("{0}{1}{2}".format(files_structur,
                                                      tags_structur,
-                                                     tag_relation_structur)
+                                                     tag_file_structur)
                                   )
         self.connection.commit()
+
+    def deleteFile(self, fid):
+        self.cursor.execute("DELETE FROM files "
+                            + "WHERE id=(?);", (str(fid),))
+        self.connection.commit()
+
+    def deleteTagconnectionsOfFile(self, fid):
+        self.cursor.execute("DELETE FROM tag_file "
+                            + "WHERE files_id=(?);", (str(fid),))
+        self.connection.commit()
+
+    def deleteTag(self, tid):
+        self.cursor.execute("DELETE FROM tags "
+                            + "WHERE id=(?);", (str(tid),))
+        self.connection.commit()
+
+    def getTag(self, tid):
+        self.cursor.execute("SELECT name FROM tags "
+                            + "WHERE id = (?);", (str(tid),))
+        tag = self.cursor.fetchone()
+        return tag[0] if tag else None
 
     def getTagId(self, name):
         self.cursor.execute("SELECT id FROM tags "
                             + "WHERE name LIKE (?);", ("%"+name+"%",))
         tagId = self.cursor.fetchone()
-        if tagId:
-            return tagId[0]
-        else:
-            return None
+        return tagId[0] if tagId else None
+
+    def getTagsOfFile(self, fid):
+        self.cursor.execute("SELECT tags_id FROM tag_file "
+                            + "WHERE files_id = (?);", (str(fid),))
+        return(self.cursor.fetchall())
 
     def getTagList(self):
         self.cursor.execute("SELECT name FROM tags ORDER BY name;")
-        tag = self.cursor.fetchone()
-        while tag:
-            yield tag[0]
-            tag = self.cursor.fetchone()
+        return self.cursor.fetchall()
+
+    def getTagConnectionCount(self, tag):
+        self.cursor.execute("SELECT COUNT(files_id) FROM tag_file "
+                            + "WHERE tags_id = (?);", (str(tag),))
+        count = self.cursor.fetchone()
+        return count[0] if count else None
+
+    def getFileId(self, place):
+        self.cursor.execute("SELECT id FROM files "
+                            + "WHERE place = (?);", (place,))
+        file_id = self.cursor.fetchone()
+        return file_id[0] if file_id else None
 
     def getFilelist(self):
         self.cursor.execute("SELECT place FROM files Order BY place;")
-        entry = self.cursor.fetchone()
-        while entry:
-            yield entry[0]
-            entry = self.cursor.fetchone()
+        return self.cursor.fetchall()
 
     def getFilelistByTag(self, tags):
         tag_ids = []
@@ -227,15 +256,12 @@ class MyDB(object):
             for tag_id in enumerate(tag_ids):
                 if tag_id[0] > 0:
                     query += "INTERSECT "
-                query += ("SELECT files_id FROM tag_relation "
+                query += ("SELECT files_id FROM tag_file "
                           + "WHERE tags_id=(?) ")
 
             query += ") ORDER BY files.place;"
             self.cursor.execute(query, (tag_ids))
-            file = self.cursor.fetchone()
-            while file:
-                yield file[0]
-                file = self.cursor.fetchone()
+            return self.cursor.fetchall()
 
 
 def main():
@@ -284,7 +310,6 @@ def main():
     else:
         parser.print_help()
 
-    # verbose=options.verbose
     return(0)
 
 
@@ -307,8 +332,30 @@ def cleanup():
 
     searching for new files
     '''
+    db = MyDB(config["dbFile"])
+    filelist = db.getFilelist()
+    for entry in filelist:
+        if not os.path.isfile(config["managedDir"]+entry[0]):
+            # get file id
+            fid = db.getFileId(entry[0])
 
-    pass
+            # get tags
+            tags = db.getTagsOfFile(fid)
+
+            # delete file
+            db.deleteFile(fid)
+            print('File ' + entry[0] + ' deleted!')
+
+            # delete tag file conection
+            db.deleteTagconnectionsOfFile(fid)
+            print('Tagconnections deleted!')
+
+            # if no entry with the tag delete tag
+            for tag in tags:
+                if not db.getTagConnectionCount(tag[0]):
+                    tagname = db.getTag(tag[0])
+                    db.deleteTag(tag[0])
+                    print('Tag ' + tagname + " deleted!")
 
 
 def refresh(verbose):
@@ -343,15 +390,14 @@ def search(searchstring, verbose):
     filelist = db.getFilelistByTag(searchstring)
     # print("\n".join(filelist))
     for file in filelist:
-        print(config['managedDir']+file)
+        print(config['managedDir']+file[0])
 
 
 def list_tags():
     db = MyDB(config['dbFile'])
     tagList = db.getTagList()
-    print("\n".join(tagList))
     for tag in tagList:
-        print(tag)
+        print(tag[0])
 
 if __name__ == '__main__':
     main()
