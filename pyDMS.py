@@ -14,7 +14,7 @@ config = {
     'managedDir': '/home/benni/Dokumente/DMS/',
     'newFilesDir': '/home/benni/Dokumente/DMS/new/',
     'dbTyp': 'SQLight',
-    'dbFile': 'pyDMS.sql'
+    'dbFile': '/home/benni/Dokumente/pyDMS.sql'
 }
 
 
@@ -121,7 +121,7 @@ CREATE TABLE tags(
     );'''
 
 tag_file_structur = '''
-DROP TABLE IF EXISTS tag_relation;
+DROP TABLE IF EXISTS tag_file;
 CREATE TABLE tag_file(
     files_id INTEGER,
     tags_id INTEGER,
