@@ -1,4 +1,4 @@
-pyDMS
+dms.py
 =====
 
 managing my documents

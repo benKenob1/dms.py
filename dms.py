@@ -350,8 +350,8 @@ def list_tags():
 
 def main():
 
-    parser = argparse.ArgumentParser(description="dms for python",
-                                     prog="PyDMS.py")
+    parser = argparse.ArgumentParser(description="Document Management System",
+                                     prog="dms.py")
     parser.add_argument("-c", "--cleanup", action="store_true",
                         help="cleaning up the db", default=False)
     parser.add_argument("-r", "--refresh", action="store_true",
