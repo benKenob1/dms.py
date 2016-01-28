@@ -11,10 +11,10 @@ from shutil import copyfile
 #########################################################
 '''
 config = {
-    'managedDir': '/home/benni/Dokumente/DMS/',
-    'newFilesDir': '/home/benni/Dokumente/DMS/new/',
+    'managedDir': '/home/benni/Dokumente/dms/',
+    'newFilesDir': '/home/benni/Dokumente/dms/new/',
     'dbTyp': 'SQLight',
-    'dbFile': '/home/benni/Dokumente/pyDMS.sql'
+    'dbFile': '/home/benni/Dokumente/dms/dms.sql'
 }
 
 
@@ -220,7 +220,8 @@ class MyDB(object):
         return(self.cursor.fetchall())
 
     def getTagList(self):
-        self.cursor.execute("SELECT name FROM tags ORDER BY name;")
+        self.cursor.execute(("SELECT name FROM tags ORDER BY name "
+                            "COLLATE NOCASE;"))
         return self.cursor.fetchall()
 
     def getTagConnectionCount(self, tag):
@@ -236,7 +237,8 @@ class MyDB(object):
         return file_id[0] if file_id else None
 
     def getFilelist(self):
-        self.cursor.execute("SELECT place FROM files Order BY place;")
+        self.cursor.execute(("SELECT place FROM files Order BY place "
+                             "COLLATE NOCASE;"))
         return self.cursor.fetchall()
 
     def getFilelistByTag(self, tags):
@@ -256,7 +258,7 @@ class MyDB(object):
                 query += ("SELECT files_id FROM tag_file "
                           + "WHERE tags_id=(?) ")
 
-            query += ") ORDER BY files.place;"
+            query += ") ORDER BY files.place COLLATE NOCASE;;"
             self.cursor.execute(query, (tag_ids))
             return self.cursor.fetchall()
 
@@ -346,7 +348,6 @@ def search(searchstring, verbose):
     if filelist:
         for file in filelist:
             print(config['managedDir']+file[0])
-
 
 
 def main():
