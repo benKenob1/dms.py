@@ -303,7 +303,7 @@ def list_files():
     db = MyDB(config["dbFile"])
     filelist = db.getFilelist()
     for file in filelist:
-        print(config['managedDir']+file)
+        print(config['managedDir']+file[0])
 
 
 def list_tags():
