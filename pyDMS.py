@@ -14,7 +14,8 @@ config = {
     'managedDir': '/home/benni/Dokumente/DMS/',
     'newFilesDir': '/home/benni/Dokumente/DMS/new/',
     'dbTyp': 'SQLight',
-    'dbFile': '/home/benni/Dokumente/pyDMS.sql'
+    'dbFile': 'pyDMS.sql'
+
 }
 
 
@@ -103,36 +104,33 @@ class placeFile(object):
         os.remove(self.src)
 
 
-# DB Struktur
-files_structur = '''
-DROP TABLE IF EXISTS files;
-CREATE TABLE files(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    place TEXT NOT NULL,
-    date DATE,
-    type TEXT NOT NULL
-    );'''
-
-tags_structur = '''
-DROP TABLE IF EXISTS tags;
-CREATE TABLE tags(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL
-    );'''
-
-tag_file_structur = '''
-DROP TABLE IF EXISTS tag_file;
-CREATE TABLE tag_file(
-    files_id INTEGER,
-    tags_id INTEGER,
-    FOREIGN KEY(files_id) REFERENCES files(id) ON DELETE CASCADE,
-    FOREIGN KEY(tags_id) REFERENCES tags(id) ON DELETE CASCADE,
-    PRIMARY KEY(files_id, tags_id)
-);
-'''
-
-
 class MyDB(object):
+    # DB Struktur
+    files_structur = ('DROP TABLE IF EXISTS files;'
+                      'CREATE TABLE files('
+                      'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+                      'place TEXT NOT NULL,'
+                      'date DATE,'
+                      'type TEXT NOT NULL'
+                      ');')
+
+    tags_structur = ('DROP TABLE IF EXISTS tags;'
+                     'CREATE TABLE tags('
+                     'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+                     'name TEXT NOT NULL'
+                     ');')
+
+    tag_file_structur = ('DROP TABLE IF EXISTS tag_file;'
+                         'CREATE TABLE tag_file('
+                         'files_id INTEGER,'
+                         'tags_id INTEGER,'
+                         'FOREIGN KEY(files_id)'
+                         'REFERENCES files(id) ON DELETE CASCADE,'
+                         'FOREIGN KEY(tags_id) REFERENCES tags(id)'
+                         'ON DELETE CASCADE,'
+                         'PRIMARY KEY(files_id, tags_id)'
+                         ');')
+
     def __init__(self, dbfile):
         self.connection = sqlite3.connect(dbfile,
                                           detect_types=sqlite3.PARSE_DECLTYPES
@@ -184,9 +182,9 @@ class MyDB(object):
             return self.cursor.lastrowid
 
     def buildStructure(self):
-        self.cursor.executescript("{0}{1}{2}".format(files_structur,
-                                                     tags_structur,
-                                                     tag_file_structur)
+        self.cursor.executescript("{0}{1}{2}".format(MyDB.files_structur,
+                                                     MyDB.tags_structur,
+                                                     MyDB.tag_file_structur)
                                   )
         self.connection.commit()
 
@@ -262,55 +260,6 @@ class MyDB(object):
             query += ") ORDER BY files.place;"
             self.cursor.execute(query, (tag_ids))
             return self.cursor.fetchall()
-
-
-def main():
-
-    parser = argparse.ArgumentParser(description="dms for python",
-                                     prog="PyDMS.py")
-    parser.add_argument("-c", "--cleanup", action="store_true",
-                        help="cleaning up the db", default=False)
-    parser.add_argument("-r", "--refresh", action="store_true",
-                        help="searches for new Files in the DMS-Directory",
-                        default=False)
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        default=False)
-    parser.add_argument("-s", "--search", action="store",
-                        help="tag or a list of tags to search for",
-                        nargs='+')
-    parser.add_argument('-t', "--tags", action="store_true",
-                        help="get a list of available tags")
-    parser.add_argument('-f', "--files", action="store_true",
-                        help="get a list of available files")
-    parser.add_argument("--flushdb", action="store_true",
-                        help="hope you know what you are doing", default=False)
-    parser.add_argument('--version', action='version', version='0.2a')
-    arguments = parser.parse_args()
-
-    # Load the config
-    if arguments.refresh:
-        refresh(arguments.verbose)
-
-    elif arguments.flushdb:
-        db = MyDB(config['dbFile'])
-        db.buildStructure()
-
-    elif arguments.files:
-        list_files()
-
-    elif arguments.cleanup:
-        cleanup()
-
-    elif arguments.search:
-        search(arguments.search, arguments.verbose)
-
-    elif arguments.tags:
-        list_tags()
-
-    else:
-        parser.print_help()
-
-    return(0)
 
 
 def list_files():
@@ -398,6 +347,56 @@ def list_tags():
     tagList = db.getTagList()
     for tag in tagList:
         print(tag[0])
+
+
+def main():
+
+    parser = argparse.ArgumentParser(description="dms for python",
+                                     prog="PyDMS.py")
+    parser.add_argument("-c", "--cleanup", action="store_true",
+                        help="cleaning up the db", default=False)
+    parser.add_argument("-r", "--refresh", action="store_true",
+                        help="searches for new Files in the DMS-Directory",
+                        default=False)
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        default=False)
+    parser.add_argument("-s", "--search", action="store",
+                        help="tag or a list of tags to search for",
+                        nargs='+')
+    parser.add_argument('-t', "--tags", action="store_true",
+                        help="get a list of available tags")
+    parser.add_argument('-f', "--files", action="store_true",
+                        help="get a list of available files")
+    parser.add_argument("--flushdb", action="store_true",
+                        help="hope you know what you are doing", default=False)
+    parser.add_argument('--version', action='version', version='0.2a')
+    arguments = parser.parse_args()
+
+    # Load the config
+    if arguments.refresh:
+        refresh(arguments.verbose)
+
+    elif arguments.flushdb:
+        db = MyDB(config['dbFile'])
+        db.buildStructure()
+
+    elif arguments.files:
+        list_files()
+
+    elif arguments.cleanup:
+        cleanup()
+
+    elif arguments.search:
+        search(arguments.search, arguments.verbose)
+
+    elif arguments.tags:
+        list_tags()
+
+    else:
+        parser.print_help()
+
+    return(0)
+
 
 if __name__ == '__main__':
     main()
