@@ -258,7 +258,7 @@ class MyDB(object):
                 query += ("SELECT files_id FROM tag_file "
                           + "WHERE tags_id=(?) ")
 
-            query += ") ORDER BY files.place COLLATE NOCASE;;"
+            query += ") ORDER BY files.place COLLATE NOCASE;"
             self.cursor.execute(query, (tag_ids))
             return self.cursor.fetchall()
 
