@@ -14,8 +14,7 @@ config = {
     'managedDir': '/home/benni/Dokumente/DMS/',
     'newFilesDir': '/home/benni/Dokumente/DMS/new/',
     'dbTyp': 'SQLight',
-    'dbFile': 'pyDMS.sql'
-
+    'dbFile': '/home/benni/Dokumente/pyDMS.sql'
 }
 
 
