@@ -261,14 +261,6 @@ class MyDB(object):
             return self.cursor.fetchall()
 
 
-def list_files():
-    # get a list of available files
-    db = MyDB(config["dbFile"])
-    filelist = db.getFilelist()
-    for file in filelist:
-        print(config['managedDir']+file)
-
-
 def cleanup():
     '''
     cleaning up the db from dead file links
@@ -306,6 +298,21 @@ def cleanup():
                     print('Tag ' + tagname + " deleted!")
 
 
+def list_files():
+    # get a list of available files
+    db = MyDB(config["dbFile"])
+    filelist = db.getFilelist()
+    for file in filelist:
+        print(config['managedDir']+file)
+
+
+def list_tags():
+    db = MyDB(config['dbFile'])
+    tagList = db.getTagList()
+    for tag in tagList:
+        print(tag[0])
+
+
 def refresh(verbose):
     # searching for new file in the new-directory write metadata into the db
     # a copy it into the directory-structur
@@ -340,12 +347,6 @@ def search(searchstring, verbose):
         for file in filelist:
             print(config['managedDir']+file[0])
 
-
-def list_tags():
-    db = MyDB(config['dbFile'])
-    tagList = db.getTagList()
-    for tag in tagList:
-        print(tag[0])
 
 
 def main():
