@@ -388,9 +388,9 @@ def search(searchstring, verbose):
         print('Searchtags: ' + ' '.join(searchstring))
     db = MyDB(config['dbFile'])
     filelist = db.getFilelistByTag(searchstring)
-    # print("\n".join(filelist))
-    for file in filelist:
-        print(config['managedDir']+file[0])
+    if filelist:
+        for file in filelist:
+            print(config['managedDir']+file[0])
 
 
 def list_tags():
