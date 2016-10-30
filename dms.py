@@ -53,21 +53,21 @@ class newFile(object):
              fileData["tags"],
              fileData["type"]) = filename.split(".")
             # checks if date is valide
-            fileData["date"] = datetime.date(int(fileData["date"][0]
-                                             + fileData["date"][1]
-                                             + fileData["date"][2]
-                                             + fileData["date"][3]),
-                                             int(fileData["date"][4]
-                                             + fileData["date"][5]),
-                                             int(fileData["date"][6]
-                                             + fileData["date"][7]))
+            fileData["date"] = datetime.date(int(fileData["date"][0] +
+                                                 fileData["date"][1] +
+                                                 fileData["date"][2] +
+                                                 fileData["date"][3]),
+                                             int(fileData["date"][4] +
+                                                 fileData["date"][5]),
+                                             int(fileData["date"][6] +
+                                                 fileData["date"][7]))
             fileData["tags"] = fileData["tags"].split("_")
             fileData["place"] = str(fileData["date"])+"/"+fileData["filename"]
             if fileData["type"] == "pdf":
                 return fileData
-        except ValueError:
-            raise ValueError("Filename {0} has not correct".format(filename)
-                             + " format yyyymmdd.tag_tag_tag.pdf")
+        except:
+            raise ValueError("Filename {0} has not correct".format(filename) +
+                             " format yyyymmdd.tag_tag_tag.pdf")
 
     def getList(self):
         # returns as generator every row of the newFilelist
@@ -131,21 +131,21 @@ class MyDB(object):
                          ');')
 
     def __init__(self, dbfile):
-        self.connection = sqlite3.connect(dbfile,
-                                          detect_types=sqlite3.PARSE_DECLTYPES
-                                          | sqlite3.PARSE_COLNAMES)
-        self.cursor = self.connection.cursor()
+        self.con = sqlite3.connect(dbfile,
+                                   detect_types=sqlite3.PARSE_DECLTYPES |
+                                   sqlite3.PARSE_COLNAMES)
+        self.cursor = self.con.cursor()
 
     def __del__(self):
         self.cursor.close()
-        self.connection.close()
+        self.con.close()
 
     def addFile(self, place, date, filetype):
         # insert int File Table
         query = "INSERT INTO files(place,date,type) Values(?,?,?)"
         values = (place, date, filetype)
         self.cursor.execute(query, values)
-        self.connection.commit()
+        self.con.commit()
         return self.cursor.lastrowid
 
     def addItem(self, place, date, filetype, tags):
@@ -166,7 +166,7 @@ class MyDB(object):
     def addRelation(self, fileid, tagid):
         query = "INSERT INTO tag_file(files_id,tags_id) VALUES(?,?);"
         self.cursor.execute(query, (fileid, tagid))
-        self.connection.commit()
+        self.con.commit()
 
     def addTag(self, name):
         # insert into TagTable
@@ -177,7 +177,7 @@ class MyDB(object):
         else:
             query = "INSERT INTO tags(name) Values(?)"
             self.cursor.execute(query, (name,))
-            self.connection.commit()
+            self.con.commit()
             return self.cursor.lastrowid
 
     def buildStructure(self):
@@ -185,38 +185,38 @@ class MyDB(object):
                                                      MyDB.tags_structur,
                                                      MyDB.tag_file_structur)
                                   )
-        self.connection.commit()
+        self.con.commit()
 
     def deleteFile(self, fid):
-        self.cursor.execute("DELETE FROM files "
-                            + "WHERE id=(?);", (str(fid),))
-        self.connection.commit()
+        self.cursor.execute("DELETE FROM files " +
+                            "WHERE id=(?);", (str(fid),))
+        self.con.commit()
 
     def deleteTagconnectionsOfFile(self, fid):
-        self.cursor.execute("DELETE FROM tag_file "
-                            + "WHERE files_id=(?);", (str(fid),))
-        self.connection.commit()
+        self.cursor.execute("DELETE FROM tag_file " +
+                            "WHERE files_id=(?);", (str(fid),))
+        self.con.commit()
 
     def deleteTag(self, tid):
-        self.cursor.execute("DELETE FROM tags "
-                            + "WHERE id=(?);", (str(tid),))
-        self.connection.commit()
+        self.cursor.execute("DELETE FROM tags " +
+                            "WHERE id=(?);", (str(tid),))
+        self.con.commit()
 
     def getTag(self, tid):
-        self.cursor.execute("SELECT name FROM tags "
-                            + "WHERE id = (?);", (str(tid),))
+        self.cursor.execute("SELECT name FROM tags " +
+                            "WHERE id = (?);", (str(tid),))
         tag = self.cursor.fetchone()
         return tag[0] if tag else None
 
     def getTagId(self, name):
-        self.cursor.execute("SELECT id FROM tags "
-                            + "WHERE name LIKE (?);", ("%"+name+"%",))
+        self.cursor.execute("SELECT id FROM tags " +
+                            "WHERE name LIKE (?);", ("%"+name+"%",))
         tagId = self.cursor.fetchone()
         return tagId[0] if tagId else None
 
     def getTagsOfFile(self, fid):
-        self.cursor.execute("SELECT tags_id FROM tag_file "
-                            + "WHERE files_id = (?);", (str(fid),))
+        self.cursor.execute("SELECT tags_id FROM tag_file " +
+                            "WHERE files_id = (?);", (str(fid),))
         return(self.cursor.fetchall())
 
     def getTagList(self):
@@ -225,14 +225,14 @@ class MyDB(object):
         return self.cursor.fetchall()
 
     def getTagConnectionCount(self, tag):
-        self.cursor.execute("SELECT COUNT(files_id) FROM tag_file "
-                            + "WHERE tags_id = (?);", (str(tag),))
+        self.cursor.execute("SELECT COUNT(files_id) FROM tag_file " +
+                            "WHERE tags_id = (?);", (str(tag),))
         count = self.cursor.fetchone()
         return count[0] if count else None
 
     def getFileId(self, place):
-        self.cursor.execute("SELECT id FROM files "
-                            + "WHERE place = (?);", (place,))
+        self.cursor.execute("SELECT id FROM files " +
+                            "WHERE place = (?);", (place,))
         file_id = self.cursor.fetchone()
         return file_id[0] if file_id else None
 
@@ -248,15 +248,15 @@ class MyDB(object):
             if tag_id:
                 tag_ids.append(tag_id)
         if tag_ids:
-            query = ("SELECT files.place "
-                     + "FROM files "
-                     + "WHERE id IN (")
+            query = ("SELECT files.place " +
+                     "FROM files " +
+                     "WHERE id IN (")
 
             for tag_id in enumerate(tag_ids):
                 if tag_id[0] > 0:
                     query += "INTERSECT "
-                query += ("SELECT files_id FROM tag_file "
-                          + "WHERE tags_id=(?) ")
+                query += ("SELECT files_id FROM tag_file " +
+                          "WHERE tags_id=(?) ")
 
             query += ") ORDER BY files.place COLLATE NOCASE;"
             self.cursor.execute(query, (tag_ids))
